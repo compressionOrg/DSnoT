@@ -7,7 +7,7 @@ from importlib.metadata import version
 
 from lib.prune import check_sparsity, prune_DSnoT, prune_magnitude, prune_sparsegpt, prune_wanda
 from lib.prune_opt import check_sparsity_opt, prune_DSnoT_opt
-from lib.eval import eval_ppl
+from lib.eval import eval_ppl, eval_zero_shot
 from lib.save_results import save_ppl_result
 
 print('torch', version('torch'))
@@ -53,6 +53,11 @@ def main():
     parser.add_argument("--output_results_file", default="results.txt", type=str)
     parser.add_argument("--cache_dir", default="llm_weights", type=str )
     parser.add_argument('--save_model', type=str, default=None, help='Path to save the pruned model.')
+
+    parser.add_argument('--eval_zero_shot', action="store_true", help="whether to zero-shot eval")
+    parser.add_argument('--num_shot', type=int, default=0, help='Number of shots for zero-shot eval.')
+    
+
     args = parser.parse_args()
 
     # Setting seeds for reproducibility
@@ -131,6 +136,24 @@ def main():
     if args.save_model:
         model.save_pretrained(args.save_model)
         tokenizer.save_pretrained(args.save_model)
+    
+    if args.eval_zero_shot:
+        accelerate=True
+        task_list = ["boolq", "rte", "hellaswag", "arc_challenge",  "openbookqa", 'winogrande', 'arc_easy']
+        num_shot = 0
+        
+        
+        if args.save_model:
+            eval_model = args.save_model
+        else:
+            eval_model = args.model
+        results = eval_zero_shot(eval_model, task_list, num_shot, accelerate)
+        model_name = eval_model.split("/")[-1]
+        dirname = "eval_zero_shot"
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        with open('{}/results_zero_shot_{}.json'.format(dirname, model_name), 'a') as file:
+            json.dump(results, file, indent=2)
 
 if __name__ == '__main__':
     main()
