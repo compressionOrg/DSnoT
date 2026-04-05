@@ -10,3 +10,39 @@ sparse pattern: unstructured
 sample: 128
 sparsity sanity check 0.6999, ppl: 71.08633422851562
 
+model: meta-llama/Llama-2-7b-hf
+prune_method: DSnoT
+without_DSnoT: False
+initial_method: wanda
+skip_layer mlp, skip_sub_layer no_skip
+max_cycle_time: 50, update_threshold: 0.1
+pow_of_var_pruning: 1, pow_of_var_regrowing:1.0
+without_same_sign: True
+sparse pattern: unstructured
+sample: 128
+sparsity sanity check 0.6999, ppl: 71.08517456054688
+
+model: meta-llama/Llama-2-7b-hf
+prune_method: DSnoT
+without_DSnoT: False
+initial_method: wanda
+skip_layer mlp, skip_sub_layer no_skip
+max_cycle_time: 50, update_threshold: 0.1
+pow_of_var_pruning: 1, pow_of_var_regrowing:1.0
+without_same_sign: True
+sparse pattern: unstructured
+sample: 128
+sparsity sanity check 0.6999, ppl: 71.08517456054688
+
+model: meta-llama/Llama-2-7b-hf
+prune_method: DSnoT_dlp_auto
+without_DSnoT: False
+initial_method: wanda
+skip_layer mlp, skip_sub_layer no_skip
+max_cycle_time: 50, update_threshold: 0.1
+pow_of_var_pruning: 1, pow_of_var_regrowing:1.0
+without_same_sign: True
+sparse pattern: unstructured
+sample: 128
+sparsity sanity check 0.6999, ppl: 24.71094512939453
+

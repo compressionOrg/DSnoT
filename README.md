@@ -45,6 +45,8 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 python main.py \
 LLaMA at 60% sparsity rate.
 ![ppl_and_running_time](imgs/wiki_ppl_and_running_time.png)
 
+
+
 ## Related Project
 
 [A Simple and Effective Pruning Approach for Large Language Models](https://github.com/locuslab/wanda)

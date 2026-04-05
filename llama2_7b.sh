@@ -1,6 +1,7 @@
 set -x 
-
-export CUDA_VISIBLE_DEVICES=3
+# 测试DSnoT 70%稀疏率下的性能
+# conda activate ria
+export CUDA_VISIBLE_DEVICES=0
 
 python main.py \
     --model "meta-llama/Llama-2-7b-hf" \

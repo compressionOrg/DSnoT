@@ -1,2 +1,4 @@
 llm_weights/
 *.pyc
+llama2_7b_sparsity_0.7_DSnoT
+llama2_7b_sparsity_0.7_DSnoT_dlp_auto

@@ -2,10 +2,18 @@ import argparse
 import os 
 import numpy as np
 import torch
+import json
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from importlib.metadata import version
 
-from lib.prune import check_sparsity, prune_DSnoT, prune_magnitude, prune_sparsegpt, prune_wanda
+from lib.prune import (
+    check_sparsity,
+    prune_DSnoT,
+    prune_DSnoT_dlp_auto,
+    prune_magnitude,
+    prune_sparsegpt,
+    prune_wanda,
+)
 from lib.prune_opt import check_sparsity_opt, prune_DSnoT_opt
 from lib.eval import eval_ppl, eval_zero_shot
 from lib.save_results import save_ppl_result
@@ -36,8 +44,14 @@ def main():
     parser.add_argument('--eval_dataset', type=str, default='wikitext2', choices=["wikitext2", "c4", "ptb"], help='eval ppl on dataset')
     parser.add_argument('--sparsity_ratio', type=float, default=0, help='Sparsity ratio.')
     parser.add_argument("--sparsity_type", type=str, choices=["unstructured", "4:8", "2:4"])
-    parser.add_argument("--prune_method", type=str, choices=["wanda", "sparsegpt", "magnitude", "DSnoT", "dense"])
+    parser.add_argument("--prune_method", type=str, choices=["wanda", "sparsegpt", "magnitude", "DSnoT", "DSnoT_dlp_auto", "dense"])
     parser.add_argument("--initial_method", type=str, choices=["wanda", "sparsegpt", "magnitude"])
+    parser.add_argument('--alpha', type=float, default=0.15, help='alpha')
+    parser.add_argument('--auto_alpha', action='store_true', help='automatically determine alpha using ternary search based on perplexity')
+    parser.add_argument('--alpha_min', type=float, default=0.01, help='minimum alpha value for auto search')
+    parser.add_argument('--alpha_max', type=float, default=0.2, help='maximum alpha value for auto search')
+    parser.add_argument('--alpha_tolerance', type=float, default=0.025, help='tolerance for alpha convergence')
+    parser.add_argument('--alpha_max_iter', type=int, default=10, help='maximum iterations for alpha search')
 
     parser.add_argument('--max_cycle_time', type=int, default=50, help='Max cycle time.')
     parser.add_argument('--without_DSnoT', action="store_true", help="without DSnoT")
@@ -56,7 +70,7 @@ def main():
 
     parser.add_argument('--eval_zero_shot', action="store_true", help="whether to zero-shot eval")
     parser.add_argument('--num_shot', type=int, default=0, help='Number of shots for zero-shot eval.')
-    
+
 
     args = parser.parse_args()
 
@@ -103,17 +117,36 @@ def main():
                 prune_sparsegpt(args, model, tokenizer, device, prune_n=prune_n, prune_m=prune_m)
             elif args.prune_method == "DSnoT":
                 prune_DSnoT(args, model, tokenizer, device, prune_n=prune_n, prune_m=prune_m)
+            elif args.prune_method == "DSnoT_dlp_auto":
+                del model
+                import gc
+                gc.collect()
+                torch.cuda.empty_cache()
+
+                def model_loader():
+                    return get_llm(args.model, args.cache_dir)
+
+                model = prune_DSnoT_dlp_auto(
+                    args,
+                    model_loader,
+                    tokenizer,
+                    device,
+                    prune_n=prune_n,
+                    prune_m=prune_m,
+                )
             elif args.prune_method == "dense":
                 pass
         elif args.model_type == "opt":
             if args.prune_method == "wanda":
-                prune_wanda_opt(args, model, tokenizer, device, prune_n=prune_n, prune_m=prune_m)
+                raise NotImplementedError("OPT model暂未接入wanda剪枝入口，请先实现prune_wanda_opt或切换为DSnoT")
             elif args.prune_method == "magnitude":
-                prune_magnitude_opt(args, model, tokenizer, device, prune_n=prune_n, prune_m=prune_m)
+                raise NotImplementedError("OPT model暂未接入magnitude剪枝入口，请先实现prune_magnitude_opt或切换为DSnoT")
             elif args.prune_method == "sparsegpt":
-                prune_sparsegpt_opt(args, model, tokenizer, device, prune_n=prune_n, prune_m=prune_m)
+                raise NotImplementedError("OPT model暂未接入sparsegpt剪枝入口，请先实现prune_sparsegpt_opt或切换为DSnoT")
             elif args.prune_method == "DSnoT":
                 prune_DSnoT_opt(args, model, tokenizer, device, prune_n=prune_n, prune_m=prune_m)
+            elif args.prune_method == "DSnoT_dlp_auto":
+                raise NotImplementedError("OPT model暂未接入DSnoT_dlp_auto入口，请先实现对应opt版本")
             elif args.prune_method == "dense":
                 pass
     
